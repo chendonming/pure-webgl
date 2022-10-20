@@ -11,42 +11,6 @@
 <body>
   <canvas id="canvas"></canvas>
 </body>
-<script type="x-shader/x-vertex" id="vertexshader">
-
-  attribute vec2 offset;
-  
-  varying vec2 vOffset;
-  
-  void main() {
-  
-      vOffset = offset;
-  
-    gl_PointSize = 25.0;
-  
-    gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
-  
-  }
-  
-  </script>
-
-<script type="x-shader/x-fragment" id="fragmentshader">
-
-  uniform sampler2D spriteSheet;
-  uniform vec2 repeat;
-  
-  varying vec2 vOffset;
-  
-  void main() {
-  
-      vec2 uv = vec2( gl_PointCoord.x, 1.0 - gl_PointCoord.y );
-  
-      vec4 tex = texture2D( spriteSheet, uv * repeat + vOffset );
-      
-      gl_FragColor = tex;
-  
-  }
-  
-  </script>
 <script src="../lib/threejs-145.js"></script>
 <script src="../lib/OrbitControls.js"></script>
 <script>
@@ -75,24 +39,27 @@
     const texture = new THREE.TextureLoader().load("../assets/f-texture.png");
     texture.wrapS = THREE.RepeatWrapping;
     texture.wrapT = THREE.RepeatWrapping;
+    texture.repeat.set(2, 2)
 
     const geometry = new THREE.PlaneGeometry(1, 1);
 
-    const uniforms = {
+    const material = new THREE.MeshBasicMaterial({ color: 0xffff00, side: THREE.DoubleSide, map: texture });
 
-      spriteSheet: { value: texture },
-      repeat: { value: new THREE.Vector2(0.5, 0.5) }
+    const shadermaterial = new THREE.ShaderMaterial({
+      vertexShader: `
+      varying vec2 vUv;
+      void main() {
+        vUv = uv;
+        gl_Position = projectionMatrix * vec4(position, 1.0);
+      }
+      `,
+      fragmentShader: `
+      void main() {
+        gl_FragColor = texture2D(u_texture, texcoord)
+      }
+      `,
+    })
 
-    };
-
-    const material = new THREE.ShaderMaterial({
-      uniforms: uniforms,
-      vertexShader: document.getElementById('vertexshader').textContent,
-      fragmentShader: document.getElementById('fragmentshader').textContent,
-      transparent: true
-    });
-
-    // const material = new THREE.MeshBasicMaterial({ color: 0xffff00, side: THREE.DoubleSide, map: texture });
     const plane = new THREE.Mesh(geometry, material);
     scene.add(plane);
 
