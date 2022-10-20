@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>三维纹理THREEJS版本</title>
+</head>
+
+<body>
+  <canvas id="canvas"></canvas>
+</body>
+<script src="../lib/threejs-145.js"></script>
+<script src="../lib/OrbitControls.js"></script>
+<script>
+  const canvas = document.getElementById('canvas')
+  canvas.style.width = window.innerWidth + 'px'
+  canvas.style.height = window.innerHeight + 'px'
+
+  const scene = new THREE.Scene()
+
+  const renderer = new THREE.WebGLRenderer({
+    canvas: canvas,
+    antialias: true
+  })
+
+  const size = 200;
+  const divisions = 200;
+
+  const gridHelper = new THREE.GridHelper(size, divisions);
+  scene.add(gridHelper);
+
+  const axesHelper = new THREE.AxesHelper(200);
+  scene.add(axesHelper);
+
+  renderer.setSize(window.innerWidth, window.innerWidth)
+  const aspect = 2;  // the canvas default
+  const fov = 35;
+  const near = 0.1;
+  const far = 5000;
+  const camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
+  camera.position.set(0, 0, 200)
+
+  const controls = new THREE.OrbitControls(camera, renderer.domElement);
+
+  const point = new THREE.PointLight(0xffffff, 1.5);
+  point.position.set(0, 0, 100);
+  scene.add(point);
+
+  const geometry = new THREE.BufferGeometry()
+  const uvs = new Float32Array([
+    // left column front
+    0, 0,
+    0, 1,
+    1, 0,
+    0, 1,
+    1, 1,
+    1, 0,
+
+    // top rung front
+    0, 0,
+    0, 1,
+    1, 0,
+    0, 1,
+    1, 1,
+    1, 0,
+
+    // middle rung front
+    0, 0,
+    0, 1,
+    1, 0,
+    0, 1,
+    1, 1,
+    1, 0,
+
+    // left column back
+    0, 0,
+    1, 0,
+    0, 1,
+    0, 1,
+    1, 0,
+    1, 1,
+
+    // top rung back
+    0, 0,
+    1, 0,
+    0, 1,
+    0, 1,
+    1, 0,
+    1, 1,
+
+    // middle rung back
+    0, 0,
+    1, 0,
+    0, 1,
+    0, 1,
+    1, 0,
+    1, 1,
+
+    // top
+    0, 0,
+    1, 0,
+    1, 1,
+    0, 0,
+    1, 1,
+    0, 1,
+
+    // top rung right
+    0, 0,
+    1, 0,
+    1, 1,
+    0, 0,
+    1, 1,
+    0, 1,
+
+    // under top rung
+    0, 0,
+    0, 1,
+    1, 1,
+    0, 0,
+    1, 1,
+    1, 0,
+
+    // between top rung and middle
+    0, 0,
+    1, 1,
+    0, 1,
+    0, 0,
+    1, 0,
+    1, 1,
+
+    // top of middle rung
+    0, 0,
+    1, 1,
+    0, 1,
+    0, 0,
+    1, 0,
+    1, 1,
+
+    // right of middle rung
+    0, 0,
+    1, 1,
+    0, 1,
+    0, 0,
+    1, 0,
+    1, 1,
+
+    // bottom of middle rung.
+    0, 0,
+    0, 1,
+    1, 1,
+    0, 0,
+    1, 1,
+    1, 0,
+
+    // right of bottom
+    0, 0,
+    1, 1,
+    0, 1,
+    0, 0,
+    1, 0,
+    1, 1,
+
+    // bottom
+    0, 0,
+    0, 1,
+    1, 1,
+    0, 0,
+    1, 1,
+    1, 0,
+
+    // left side
+    0, 0,
+    0, 1,
+    1, 1,
+    0, 0,
+    1, 1,
+    1, 0])
+
+  window.app = {
+    showPoint(x, y, z) {
+      const geometry = new THREE.BoxGeometry(1, 1, 1);
+      const material = new THREE.MeshBasicMaterial({ color: 0xffffff, depthTest: false });
+      const cube = new THREE.Mesh(geometry, material);
+      cube.position.set(x, y, z)
+      scene.add(cube);
+    }
+  }
+
+  const positions = new Float32Array([
+    // left column front
+    0, 0, 0,
+    0, 150, 0,
+    30, 0, 0,
+    0, 150, 0,
+    30, 150, 0,
+    30, 0, 0,
+
+    // top rung front
+    30, 0, 0,
+    30, 30, 0,
+    100, 0, 0,
+    30, 30, 0,
+    100, 30, 0,
+    100, 0, 0,
+
+    // middle rung front
+    30, 60, 0,
+    30, 90, 0,
+    67, 60, 0,
+    30, 90, 0,
+    67, 90, 0,
+    67, 60, 0,
+
+    // left column back
+    0, 0, 30,
+    30, 0, 30,
+    0, 150, 30,
+    0, 150, 30,
+    30, 0, 30,
+    30, 150, 30,
+
+    // top rung back
+    30, 0, 30,
+    100, 0, 30,
+    30, 30, 30,
+    30, 30, 30,
+    100, 0, 30,
+    100, 30, 30,
+
+    // middle rung back
+    30, 60, 30,
+    67, 60, 30,
+    30, 90, 30,
+    30, 90, 30,
+    67, 60, 30,
+    67, 90, 30,
+
+    // top
+    0, 0, 0,
+    100, 0, 0,
+    100, 0, 30,
+    0, 0, 0,
+    100, 0, 30,
+    0, 0, 30,
+
+    // top rung right
+    100, 0, 0,
+    100, 30, 0,
+    100, 30, 30,
+    100, 0, 0,
+    100, 30, 30,
+    100, 0, 30,
+
+    // under top rung
+    30, 30, 0,
+    30, 30, 30,
+    100, 30, 30,
+    30, 30, 0,
+    100, 30, 30,
+    100, 30, 0,
+
+    // between top rung and middle
+    30, 30, 0,
+    30, 60, 30,
+    30, 30, 30,
+    30, 30, 0,
+    30, 60, 0,
+    30, 60, 30,
+
+    // top of middle rung
+    30, 60, 0,
+    67, 60, 30,
+    30, 60, 30,
+    30, 60, 0,
+    67, 60, 0,
+    67, 60, 30,
+
+    // right of middle rung
+    67, 60, 0,
+    67, 90, 30,
+    67, 60, 30,
+    67, 60, 0,
+    67, 90, 0,
+    67, 90, 30,
+
+    // bottom of middle rung.
+    30, 90, 0,
+    30, 90, 30,
+    67, 90, 30,
+    30, 90, 0,
+    67, 90, 30,
+    67, 90, 0,
+
+    // right of bottom
+    30, 90, 0,
+    30, 150, 30,
+    30, 90, 30,
+    30, 90, 0,
+    30, 150, 0,
+    30, 150, 30,
+
+    // bottom
+    0, 150, 0,
+    0, 150, 30,
+    30, 150, 30,
+    0, 150, 0,
+    30, 150, 30,
+    30, 150, 0,
+
+    // left side
+    0, 0, 0,
+    0, 0, 30,
+    0, 150, 30,
+    0, 0, 0,
+    0, 150, 30,
+    0, 150, 0]);
+  geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  geometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+
+  const texture = new THREE.TextureLoader().load("../assets/f-texture.png");
+
+  const material = new THREE.MeshBasicMaterial({ map: texture });
+  const mesh = new THREE.Mesh(geometry, material);
+  console.log(mesh)
+  scene.add(mesh)
+
+  function render() {
+    renderer.render(scene, camera);
+    requestAnimationFrame(render);
+  }
+  requestAnimationFrame(render);
+</script>
+
+</html>

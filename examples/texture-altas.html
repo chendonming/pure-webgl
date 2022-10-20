@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>图集</title>
+</head>
+
+<body>
+  <canvas id="canvas"></canvas>
+</body>
+<script type="x-shader/x-vertex" id="vertexshader">
+
+  attribute vec2 offset;
+  
+  varying vec2 vOffset;
+  
+  void main() {
+  
+      vOffset = offset;
+  
+    gl_PointSize = 25.0;
+  
+    gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+  
+  }
+  
+  </script>
+
+<script type="x-shader/x-fragment" id="fragmentshader">
+
+  uniform sampler2D spriteSheet;
+  uniform vec2 repeat;
+  
+  varying vec2 vOffset;
+  
+  void main() {
+  
+      vec2 uv = vec2( gl_PointCoord.x, 1.0 - gl_PointCoord.y );
+  
+      vec4 tex = texture2D( spriteSheet, uv * repeat + vOffset );
+      
+      gl_FragColor = tex;
+  
+  }
+  
+  </script>
+<script src="../lib/threejs-145.js"></script>
+<script src="../lib/OrbitControls.js"></script>
+<script>
+  function init() {
+    const canvas = document.getElementById('canvas')
+    canvas.style.width = window.innerWidth + 'px'
+    canvas.style.height = window.innerHeight + 'px'
+
+    const scene = new THREE.Scene()
+
+    const renderer = new THREE.WebGLRenderer({
+      canvas: canvas,
+      antialias: true
+    })
+
+    renderer.setSize(window.innerWidth, window.innerWidth)
+    const aspect = 2;  // the canvas default
+    const fov = 35;
+    const near = 0.1;
+    const far = 5000;
+    const camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
+    camera.position.set(1, 2, 3)
+
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+
+    const texture = new THREE.TextureLoader().load("../assets/f-texture.png");
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+
+    const geometry = new THREE.PlaneGeometry(1, 1);
+
+    const uniforms = {
+
+      spriteSheet: { value: texture },
+      repeat: { value: new THREE.Vector2(0.5, 0.5) }
+
+    };
+
+    const material = new THREE.ShaderMaterial({
+      uniforms: uniforms,
+      vertexShader: document.getElementById('vertexshader').textContent,
+      fragmentShader: document.getElementById('fragmentshader').textContent,
+      transparent: true
+    });
+
+    // const material = new THREE.MeshBasicMaterial({ color: 0xffff00, side: THREE.DoubleSide, map: texture });
+    const plane = new THREE.Mesh(geometry, material);
+    scene.add(plane);
+
+
+    function render() {
+      renderer.render(scene, camera);
+      requestAnimationFrame(render);
+    }
+    requestAnimationFrame(render);
+  }
+
+  init()
+</script>
+
+</html>
