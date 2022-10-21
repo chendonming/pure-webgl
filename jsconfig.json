@@ -1,0 +1,10 @@
+{
+  "include": [
+    "examples/**/*",
+    "lib/**/*"
+  ],
+  "compilerOptions": {
+    "baseUrl": ".",
+    "target": "es6"
+  }
+}

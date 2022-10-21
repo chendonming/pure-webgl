@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <style>
+    body {
+      background-color: #000;
+      margin: 0px;
+      overflow: hidden;
+    }
+  </style>
+</head>
+
+<body>
+  <canvas id="canvas"></canvas>
+</body>
+<script src="../lib/threejs-145.js"></script>
+<script src="../lib/OrbitControls.js"></script>
+
+<script>
+  const shaders = {
+    vs: `
+      attribute vec2 vert;
+      varying vec2 uv;
+      void main() {
+          uv = vert;
+          gl_Position = vec4(vert, 0.0, 1.0);
+      }`,
+    fs: `precision mediump float;
+        uniform sampler2D tex;
+        varying vec2 uv;  
+        uniform vec4 repeat;
+        uniform vec2 tiles;
+        void main(){
+            // texture2D(sampler, coord); 取样器和纹理坐标
+            // mod(a, b) 取模运算
+            // repeat = vec4(x, y, z, w)
+            gl_FragColor = vec4(texture2D(tex, mod(uv * tiles, vec2(1)) * repeat.zw + repeat.xy));
+        }`
+  };
+  const colors = "#ff0000,#ff8800,#ffff00,#88ff00,#00ff00,#00ff88,#00f0f0,#0088ff,#0000ff,#8800ff,#ff00ff,#ff0088".split(",");
+
+  const randCol = (cols = colors) => cols[Math.random() * cols.length | 0];
+
+  const F32A = a => new Float32Array(a), UI16A = a => new Uint16Array(a);
+
+  const GLBuffer = (data, type = gl.ARRAY_BUFFER, use = gl.STATIC_DRAW, buf) =>
+    (gl.bindBuffer(type, buf = gl.createBuffer()), gl.bufferData(type, data, use), buf);
+
+  const GLLocs = (shr, type, ...names) => names.reduce((o, name) => (o[name] = (gl[`get${type}Location`])(shr, name), o), {});
+
+  const GLShader = (prg, source, type = gl.FRAGMENT_SHADER, shr) => {
+    gl.shaderSource(shr = gl.createShader(type), source);
+    gl.compileShader(shr);
+    gl.attachShader(prg, shr);
+  }
+
+  function texture(gl, image, { min = "LINEAR", mag = "LINEAR" } = {}) {
+    const texture = gl.createTexture();
+    target = gl.TEXTURE_2D;
+    gl.bindTexture(target, texture);
+    gl.texParameteri(target, gl.TEXTURE_MIN_FILTER, gl[min]);
+    gl.texParameteri(target, gl.TEXTURE_MAG_FILTER, gl[mag]);
+    gl.texImage2D(target, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+    return texture;
+  }
+
+  const bindTexture = (texture, unit = 0) => { gl.activeTexture(gl.TEXTURE0 + unit); gl.bindTexture(gl.TEXTURE_2D, texture) }
+
+  const createTag = (tag, props = {}) => Object.assign(document.createElement(tag), props);
+
+  const appendEl = (par, ...sibs) => sibs.reduce((p, sib) => (p.appendChild(sib), p), par);
+
+  function createTexture(width = 256, height = 256) {
+    const tex = createTag("canvas", { width, height, className: "texture" });
+    appendEl(document.body, tex);
+    const ctx = tex.getContext("2d");
+    var x = 4, y = 4, count = 0;
+    const xStep = width / x, yStep = height / y;
+    ctx.font = (yStep * 0.95 | 0) + "px arial";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    while (y--) {
+      x = 4;
+      while (x--) {
+        ctx.fillStyle = randCol();
+        ctx.fillRect(x * xStep, y * yStep, xStep, yStep);
+        ctx.fillStyle = "#000";
+        ctx.fillText((count++).toString(16).toUpperCase(), (x + 0.5) * xStep, (y + 0.5) * yStep);
+      }
+    }
+    ctx.setTransform(1, 0, 0, -1, 0, height);
+    ctx.globalCompositeOperation = "copy";
+    ctx.drawImage(tex, 0, 0);
+    // 绑定纹理
+    bindTexture(texture(gl, tex));
+    ctx.drawImage(tex, 0, 0);
+  }
+
+  var W;
+  const gl = canvas.getContext("webgl");
+
+  requestAnimationFrame(renderRandom);
+
+  addEventListener("resize", renderRandom);
+
+  const prog = gl.createProgram();
+  GLShader(prog, shaders.vs, gl.VERTEX_SHADER);
+  GLShader(prog, shaders.fs);
+  gl.linkProgram(prog);
+  gl.useProgram(prog);
+
+  // getUniformLocation  -->  repeat tiles
+  const locs = GLLocs(prog, "Uniform", "repeat", "tiles");
+  // getAttribLocation -----> vert
+  const attIdxs = GLLocs(prog, "Attrib", "vert");
+
+  GLBuffer(F32A([-1, -1, 1, -1, 1, 1, -1, 1]));
+  GLBuffer(UI16A([1, 2, 3, 0, 1, 3]), gl.ELEMENT_ARRAY_BUFFER);
+
+  gl.enableVertexAttribArray(attIdxs.vert);
+  gl.vertexAttribPointer(attIdxs.vert, 2, gl.FLOAT, false, 0, 0);
+
+  createTexture();
+
+  function renderRandom() {
+    gl.viewport(0, 0, W = canvas.width = Math.min(innerWidth, innerHeight), canvas.height = W);
+    const textPxSize = 1 / 256; // 字体大小
+    const m = 0.6;
+    const x = (m * 4 | 0) / 4 + textPxSize / 2;
+    const y = (m * 4 | 0) / 4 + textPxSize / 2;
+    const tiles = 0.5 * 8 + 1 | 0; // 5 ---> 10 * 10
+
+    // 给repeat输入值  前两位是纹理坐标 后两位是宽高
+    gl.uniform4fv(locs.repeat, F32A([x, y, 0.25 - textPxSize, 0.25 - textPxSize]));
+    // 给tiles输入值  5,5  ------> 10 * 10
+    gl.uniform2fv(locs.tiles, F32A([tiles, tiles]));
+    gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT, 0);
+  }
+</script>
+
+</html>

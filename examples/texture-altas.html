@@ -39,9 +39,19 @@
     const texture = new THREE.TextureLoader().load("../assets/f-texture.png");
     texture.wrapS = THREE.RepeatWrapping;
     texture.wrapT = THREE.RepeatWrapping;
-    texture.repeat.set(2, 2)
 
-    const geometry = new THREE.PlaneGeometry(1, 1);
+    const geometry = new THREE.BufferGeometry();
+    const vertices = new Float32Array([
+      0, 0, 0,
+      1, 0, 0,
+      1, 1, 0,
+
+      0, 0, 0,
+      1, 1, 0,
+      0, 1, 0,
+    ])
+    geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+    geometry.computeVertexNormals()
 
     const material = new THREE.MeshBasicMaterial({ color: 0xffff00, side: THREE.DoubleSide, map: texture });
 
@@ -50,17 +60,35 @@
       varying vec2 vUv;
       void main() {
         vUv = uv;
-        gl_Position = projectionMatrix * vec4(position, 1.0);
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
       }
       `,
       fragmentShader: `
+      varying vec2 vUv;
+      uniform sampler2D u_texture;
       void main() {
-        gl_FragColor = texture2D(u_texture, texcoord)
+        gl_FragColor = texture2D(u_texture, vUv);
       }
       `,
+      uniforms: {
+        u_texture: {
+          value: texture
+        }
+      },
     })
 
-    const plane = new THREE.Mesh(geometry, material);
+    const uvs = new Float32Array([
+      0.2, 0,
+      0.7, 0,
+      0.7, 0.8,
+
+      0.2, 0,
+      0.7, 0.8,
+      0.2, 0.8,
+    ])
+
+    geometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+    const plane = new THREE.Mesh(geometry, shadermaterial);
     scene.add(plane);
 
 
